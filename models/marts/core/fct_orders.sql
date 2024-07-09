@@ -6,32 +6,27 @@
 }}
 
 with orders as (
-    
     select * from {{ ref('stg_tpch_orders') }} 
-
 ),
+
 order_item as (
-    
     select * from {{ ref('order_items') }}
-
 ),
-order_item_summary as (
 
+order_item_summary as (
     select 
         order_key,
         sum(gross_item_sales_amount) as gross_item_sales_amount,
         sum(item_discount_amount) as item_discount_amount,
         sum(item_tax_amount) as item_tax_amount,
         sum(net_item_sales_amount) as net_item_sales_amount,
-        count_if( return_flag = 'returned' ) as return_count
+        sum(case when return_flag = 'returned' then 1 else 0 end) as return_count
     from order_item
-    group by
-        1
+    group by order_key
 ),
+
 finalt as (
-
     select 
-
         orders.order_key, 
         orders.order_date,
         orders.customer_key,
@@ -47,13 +42,13 @@ finalt as (
         order_item_summary.net_item_sales_amount
     from
         orders
-        inner join order_item_summary
-            on orders.order_key = order_item_summary.order_key
+    inner join order_item_summary
+        on orders.order_key = order_item_summary.order_key
 )
+
 select 
     *
 from
     finalt
-
 order by
     order_date
